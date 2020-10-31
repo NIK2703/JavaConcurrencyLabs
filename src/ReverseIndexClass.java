@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 public class ReverseIndexClass {
     public static void demo() throws FileNotFoundException {
         //System.out.println("Введите путь к директории проекта Java:");
-        File projectDir = new File("/home/nikita/IdeaProjects/ReverseClassIndexTestProjects/src/com/company");
-        File[] files = projectDir.listFiles();
+        File projectDir = new File("/home/nikita/projects/spring-framework");
+        List<File> files = FileSearcher.searchTypeRecursive(projectDir, ".java");
         Map<String, List<String>> inheritMap = new HashMap<>();
 
         Pattern classPattern = Pattern.compile(
@@ -22,7 +22,7 @@ public class ReverseIndexClass {
                 "(?<=[ ,.?!])*[a-zA-Zа-яА-Я]+(?=[ ,.?!]*)"
         );
 
-        Arrays.stream(files).
+        files.stream().
                 map((f) -> {
                     try {
                         return new BufferedReader(new FileReader(f));
@@ -30,10 +30,7 @@ public class ReverseIndexClass {
                         System.out.println("Ошибка при чтении файлов дирекории");
                         return null;
                     }
-                }).map(br -> br.lines()).
-                map(lines -> lines.
-                        filter(classPattern.asPredicate()).
-                        findFirst().get()).
+                }).flatMap(br -> br.lines().filter(classPattern.asPredicate())).
                         map(line -> classPattern.matcher(line)).
                         forEach(matcher -> {
                             while(matcher.find()) {

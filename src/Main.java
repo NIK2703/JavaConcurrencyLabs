@@ -11,6 +11,8 @@ public class Main {
     public static void main(String[] args) throws IOException {
         //WordCounter.demo();
         ReverseIndexClass.demo();
+        //System.out.println(FileSearcher.searchTypeRecursive(new File("/home/nikita/projects/spring-framework"), ".java"));
+        //System.out.println();
     }
 
 }
