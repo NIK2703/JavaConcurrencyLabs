@@ -22,22 +22,22 @@ public class ReverseIndexClass {
                 "(?<=[ ,.?!])*[a-zA-Zа-яА-Я]+(?=[ ,.?!]*)"
         );
 
-        files.stream().
-                map((f) -> {
-                    try {
-                        return new BufferedReader(new FileReader(f));
-                    } catch (FileNotFoundException e) {
-                        System.out.println("Ошибка при чтении файлов дирекории");
-                        return null;
-                    }
-                }).flatMap(br -> br.lines().filter(classPattern.asPredicate())).
+        files.stream().forEach(f -> {
+            Thread t = new Thread(() -> {
+                BufferedReader br = null;
+                try {
+                    br = new BufferedReader(new FileReader(f));
+                } catch (FileNotFoundException e) {
+                    System.out.println("Ошибка при чтении файлов дирекории");
+                }
+                br.lines().
                         map(line -> classPattern.matcher(line)).
                         forEach(matcher -> {
-                            while(matcher.find()) {
+                            while (matcher.find()) {
                                 String[] classNameGroups = matcher.group().split(" extends | implements ");
                                 for (int i = 1; i < classNameGroups.length; i++) {
                                     Matcher wordMatcher = wordPattern.matcher(classNameGroups[i]);
-                                    while(wordMatcher.find()) {
+                                    while (wordMatcher.find()) {
                                         if (inheritMap.get(wordMatcher.group()) == null) {
                                             inheritMap.put(wordMatcher.group(), new ArrayList<>());
                                         }
@@ -51,11 +51,19 @@ public class ReverseIndexClass {
                                 //inheritMap.get(classNames.length > 1 ? classNames[2] : null).add(classNames[0]);
                             }
                         });
+            });
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException iex) {
+                System.out.println("Thread is interrupted");
+            }
+        });
 
 
-        for (String k : inheritMap.keySet()) {
-            System.out.println((k != null ? k : "roots" ) + " : " + inheritMap.get(k));
+            for (String k : inheritMap.keySet()) {
+                System.out.println((k != null ? k : "roots") + " : " + inheritMap.get(k));
+            }
+
         }
-
     }
-}
