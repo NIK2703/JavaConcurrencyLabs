@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public class ReverseIndexClass {
     public static void demo() throws FileNotFoundException {
         //System.out.println("Введите путь к директории проекта Java:");
-        File projectDir = new File("/home/nikita/projects/spring-framework");
+        File projectDir = new File("C:\\Users\\Nikita\\IdeaProjects\\spring-framework-main");
         List<File> files = FileSearcher.searchTypeRecursive(projectDir, ".java");
         Map<String, List<String>> inheritMap = new HashMap<>();
 
@@ -21,6 +21,8 @@ public class ReverseIndexClass {
                 //"(?<=class |interface )([a-zA-Z]+)( extends | implements )*([a-zA-Z]*)"
                 "(?<=[ ,.?!])*[a-zA-Zа-яА-Я]+(?=[ ,.?!]*)"
         );
+
+        ArrayList<Thread> threads = new ArrayList<>();
 
         files.stream().forEach(f -> {
             Thread t = new Thread(() -> {
@@ -53,13 +55,17 @@ public class ReverseIndexClass {
                         });
             });
             t.start();
+            threads.add(t);
+
+        });
+
+        for(Thread t : threads) {
             try {
                 t.join();
             } catch (InterruptedException iex) {
                 System.out.println("Thread is interrupted");
             }
-        });
-
+        }
 
             for (String k : inheritMap.keySet()) {
                 System.out.println((k != null ? k : "roots") + " : " + inheritMap.get(k));
