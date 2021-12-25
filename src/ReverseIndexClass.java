@@ -3,13 +3,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ReverseIndexClass {
     public static void demo() throws FileNotFoundException {
         //System.out.println("Введите путь к директории проекта Java:");
-        File projectDir = new File("C:\\Users\\Nikita\\IdeaProjects\\spring-framework-main");
+        File projectDir = new File("C:\\Users\\User\\IdeaProjects\\spring-framework-main");
         List<File> files = FileSearcher.searchTypeRecursive(projectDir, ".java");
         Map<String, List<String>> inheritMap = new HashMap<>();
 
@@ -22,16 +24,22 @@ public class ReverseIndexClass {
                 "(?<=[ ,.?!])*[a-zA-Zа-яА-Я]+(?=[ ,.?!]*)"
         );
 
-        ArrayList<Thread> threads = new ArrayList<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+
+        ArrayList<Future<HashMap<String, List<String>>>> futures = new ArrayList<>();
+
 
         files.stream().forEach(f -> {
-            Thread t = new Thread(() -> {
+            futures.add(executorService.submit( () -> {
+
                 BufferedReader br = null;
                 try {
                     br = new BufferedReader(new FileReader(f));
                 } catch (FileNotFoundException e) {
                     System.out.println("Ошибка при чтении файлов дирекории");
                 }
+                HashMap<String, List<String>> inheritMapFile = new HashMap<>();
+
                 br.lines().
                         map(line -> classPattern.matcher(line)).
                         forEach(matcher -> {
@@ -40,36 +48,52 @@ public class ReverseIndexClass {
                                 for (int i = 1; i < classNameGroups.length; i++) {
                                     Matcher wordMatcher = wordPattern.matcher(classNameGroups[i]);
                                     while (wordMatcher.find()) {
-                                        if (inheritMap.get(wordMatcher.group()) == null) {
-                                            inheritMap.put(wordMatcher.group(), new ArrayList<>());
+                                        if (inheritMapFile.get(wordMatcher.group()) == null) {
+                                            inheritMapFile.put(wordMatcher.group(), new ArrayList<>());
                                         }
-                                        inheritMap.get(wordMatcher.group()).add(classNameGroups[0]);
+                                        inheritMapFile.get(wordMatcher.group()).add(classNameGroups[0]);
                                     }
-
-                                    //System.out.println(classNames[1]);
-
-
                                 }
-                                //inheritMap.get(classNames.length > 1 ? classNames[2] : null).add(classNames[0]);
+                                //System.out.println(classNames[1]);
+
+
                             }
+                            //inheritMap.get(classNames.length > 1 ? classNames[2] : null).add(classNames[0]);
                         });
-            });
-            t.start();
-            threads.add(t);
 
+                    return inheritMapFile;
+
+            }));
         });
+        /*for (FutureTask<HashMap<String, List<String>>> future : futures) {
+            executorService.execute(future);
+        }*/
 
-        for(Thread t : threads) {
+
+        for (Future<HashMap<String, List<String>>> future : futures) {
+
             try {
-                t.join();
-            } catch (InterruptedException iex) {
-                System.out.println("Thread is interrupted");
+                for (String key : future.get().keySet()) {
+                    if(inheritMap.get(key) == null) {
+                        inheritMap.put(key, new ArrayList<>());
+                    }
+                    for(String value : future.get().get(key)) {
+                        inheritMap.get(key).add(value);
+                    }
+
+                }
+            } catch (java.lang.InterruptedException e) {
+                e.printStackTrace();
+            }
+            catch (java.util.concurrent.ExecutionException e) {
+                e.printStackTrace();
             }
         }
-
-            for (String k : inheritMap.keySet()) {
-                System.out.println((k != null ? k : "roots") + " : " + inheritMap.get(k));
-            }
-
+        for(Map.Entry e : inheritMap.entrySet()) {
+            System.out.println(e.getKey() + " : " + e.getValue());
         }
+
+
+
     }
+}
